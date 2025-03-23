@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase CRUD</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(270deg, #7b2ff7, #f107a3, #7b2ff7, #f107a3);
+            background-size: 400% 400%;
+            animation: GradientBackground 15s ease infinite;
+        }
+
+        @keyframes GradientBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #7b2ff7;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: #f3f3f3;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+
+        input:focus {
+            background: #e0e0e0;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #7b2ff7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #5a1bb0;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        li {
+            background: #f3f3f3;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        li:hover {
+            transform: translateY(-2px);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn {
+            background: #f107a3;
+            padding: 8px 12px;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #c9057f;
+        }
+
+        .user-info {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Firebase CRUD App</h2>
+        <input type="text" id="name" placeholder="Enter Name">
+        <input type="email" id="email" placeholder="Enter Email">
+        <button onclick="addUser()">Add User</button>
+        <h3>Users:</h3>
+        <ul id="userList"></ul>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDAcH6ucquQQQzF_DLPefQi9isfeBD5s1U",
+            authDomain: "mycrudapp-83bad.firebaseapp.com",
+            projectId: "mycrudapp-83bad",
+            storageBucket: "mycrudapp-83bad.firebasestorage.app",
+            messagingSenderId: "511093856409",
+            appId: "1:511093856409:web:7fbc8198a97364df3f8008"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function addUser() {
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            if (name && email) {
+                await addDoc(collection(db, "users"), { name, email });
+                alert("User added!");
+                fetchUsers();
+            } else {
+                alert("Please fill in all fields.");
+            }
+        }
+
+        async function fetchUsers() {
+            const querySnapshot = await getDocs(collection(db, "users"));
+            const userList = document.getElementById("userList");
+            userList.innerHTML = "";
+            querySnapshot.forEach((doc) => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <div class="user-info">${doc.data().name} (${doc.data().email})</div>
+                    <div class="user-actions">
+                        <button class='action-btn' onclick="updateUser('${doc.id}')">Update</button>
+                        <button class='action-btn' onclick="deleteUser('${doc.id}')">Delete</button>
+                    </div>`;
+                userList.appendChild(li);
+            });
+        }
+
+        async function updateUser(userId) {
+            const newName = prompt("Enter new name:");
+            if (newName) {
+                await updateDoc(doc(db, "users", userId), { name: newName });
+                alert("User updated!");
+                fetchUsers();
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (confirm("Are you sure you want to delete this user?")) {
+                await deleteDoc(doc(db, "users", userId));
+                alert("User deleted!");
+                fetchUsers();
+            }
+        }
+
+        fetchUsers();
+        window.addUser = addUser;
+        window.updateUser = updateUser;
+        window.deleteUser = deleteUser;
+    </script>
+</body>
+</html>
